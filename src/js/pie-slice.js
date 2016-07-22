@@ -12,12 +12,13 @@
 
 var pSlice = (function(window, google, undefined){
 
+
 	//Global Variables
 	var towers = {},
 		info_windows = [],
 		sectors = [],
 		EarthRadiusMeters = 6378137.0, // meters
-		element = document.getElementById('gmap_canvas'),
+		element = document.getElementById('gmap-canvas'),
 		global_z_index = 1;
 
 	// Set up map options 
@@ -35,6 +36,72 @@ var pSlice = (function(window, google, undefined){
 			}
 		};
 	var map = new google.maps.Map(element, options);
+
+
+	function add_site(site){
+		// site - obj literal
+
+		// Set up the info window and elements
+		var container = document.createElement('div'),
+			header = document.createElement('h3'),
+			table = document.createElement('talbe');
+
+		container.setAttribute('class', 'site-info-window');
+		table.setAttribute('data-name', site.site_name);
+		table.setAttribute('class', 'site');
+
+		header.innerHTML = site.site_name;
+
+		container.appendChild(header);
+		container.appendChild(table);
+
+		elems = ['site_number', 'site_range', 'height', 'type']
+
+		display_format = {
+			'site_number': 	'Site Number:',
+			'site_range': 	'Range:',
+			'height': 		'Height:',
+			'type': 		'Type:'
+		}
+
+		for(var i = 0; i < elems.length; i++){
+			var row = document.createElement('tr'),
+				col = document.createElement('td'),
+				val = document.createElement('td')
+
+			col.setAttribute('style', 'text-align: left; font-weight: bold');
+			val.setAttribute('style', 'text-align: right;');
+			col.innerHTML = display_format[elems[i]];
+			val.innerHTML = site[elems[i]];
+			row.appendChild(col);
+			row.appendChild(val);
+			table.appendChild(row);
+		}
+
+		var info_window = addInfoWindow(site.site_name, container);
+		info_windows.push(info_window);
+
+
+		marker_options = {
+			map: map,
+			name: site.site_name,
+			height: site.height,
+			position: {
+				'lat': site.lat,
+				'lng': site.lng
+			}
+		}
+
+		towers[site.site_name] = new google.maps.Marker(marker_options);
+
+		onInfoWindow_Click(towers[site.site_name], info_window);
+		onInfoWindow_MouseOut(towers[site.site_name], info_window);
+
+	}
+
+
+
+
 
 	//main function for placing marker(tower location) on map
 	function placeMarker(lat, lng, name, height){
@@ -286,6 +353,7 @@ var pSlice = (function(window, google, undefined){
 					sectors[i].setMap(null)
 				}
 				else{
+					// Increment global_z_index so sector appears on top when toggled on
 					global_z_index++;
 					sectors[i].setOptions({zIndex: global_z_index})
 					sectors[i].setMap(map)
@@ -301,89 +369,7 @@ var pSlice = (function(window, google, undefined){
 		removeSector: function(name){ return removeSector(name) },
 		addRadio: function(radio){ return addRadio(radio) },
 		sectors: function(){ return sectors },
-		toggle_sector: function(name){ return toggle_sector(name) }
+		toggle_sector: function(name){ return toggle_sector(name) },
+		add_site: function(site){ return add_site(site) }
 	}	
 })(window, google, undefined);
-
-
-//Test data
-
-var r = {
-		site_height: 100,
-		lat: 36.113225,
-		lng: -97.058395,
-		deivce_name: 'testAp',
-		site_name: 'pvn',
-		tx_freq: 2400,
-		band: 2.5,
-		ant_azimuth: 160,
-		ant_beamwidth: 90,
-		site_range: 10 };
-var testRadio = {
-		site_height: 100,
-		lat: 36.113225,
-		lng: -97.058395,
-		deivce_name: 'testAp2',
-		site_name: 'pvn',
-		tx_freq: 2675,
-		band: 5.8,
-		ant_azimuth: 300,
-		ant_beamwidth: 90,
-		site_range: 10 };
-//var center = new google.maps.LatLng(36.113225, -97.058395);
-var x = {
-		site_height: 100,
-		lat: 36.113225,
-		lng: -97.058395,
-		deivce_name: 'testAp3',
-		site_name: 'pvn',
-		tx_freq: 2450,
-		band: 2.8,
-		ant_azimuth: 200,
-		ant_beamwidth: 90,
-		site_range: 10 
-	};
-var y = {
-		site_height: 100,
-		lat: 36.113225,
-		lng: -97.058395,
-		device_name: 'testAp4',
-		site_name: 'pvn',
-		tx_freq: 2075,
-		band: 5.2,
-		ant_azimuth: 60,
-		ant_beamwidth: 90,
-		site_range: 10 
-		};
-// var t = {
-
-// 		device_name: 'testAp5',
-// 		site_name: '51E',
-// 		tx_freq: 2550,
-// 		band: 2.6,
-// 		ant_bearing: 90,
-// 		ant_beamwidth: 90,
-// 		site_range: 10*1609.34  };
-// var v =	{
-// 		device_name: 'testAp6',
-// 		site_name: '51E',
-// 		tx_freq: 2185,
-// 		band: 5,
-// 		ant_bearing: 235,
-// 		ant_beamwidth: 70,
-// 		site_range: 10*1609.34 
-// 		};
-pSlice.placeMarker(36.113225, -97.058395, 'pvn', 100);
-pSlice.addRadio(r);
-pSlice.addRadio(testRadio);
-pSlice.addRadio(x);
-pSlice.addRadio(y);
-
-// pSlice.placeMarker(36.122800, -96.924912, '51E', 75);
-// center = new google.maps.LatLng(36.122800, -96.924912);
-// pSlice.addRadio(center, t);
-// pSlice.addRadio(center, v);
-
-
-
-// pSlice.placeMarker(35.940088, -97.303856, 'Langston', 220, t);
