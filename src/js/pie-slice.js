@@ -16,7 +16,7 @@
 
 var pSlice = (function(window, google, undefined){
 
-
+var x = 0, y= 0;
 	//Global Variables
 	var towers = {},
 		info_windows = [],
