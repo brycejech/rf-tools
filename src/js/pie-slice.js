@@ -4,7 +4,7 @@
 
 
 var pSlice = (function(window, google, undefined){
-
+	// Library for drawing pie-slices on google map canvas
 
 	//Global Variables
 	var towers = {},
@@ -31,7 +31,7 @@ var pSlice = (function(window, google, undefined){
 	// Initialize the map
 	var map = new google.maps.Map(map_element, map_options);
 
-
+	// Primary function for adding site markers, also intializes site's info_window
 	function add_site(site){
 		// site - obj literal
 
@@ -54,7 +54,6 @@ var pSlice = (function(window, google, undefined){
 		info_windows.push(info_window);
 		// Rename this
 		add_click_event(towers[site_name], info_window);
-
 	}
 
 
@@ -104,7 +103,7 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function that adds radio info to tower info_window
+	// Primary function for adding sector polys, also initializes sector's info_window
 	//Also creates polygon for radio based on bearing, beamwidth, and radius
 	function add_radio(radio){
 		
@@ -128,8 +127,6 @@ var pSlice = (function(window, google, undefined){
 		else{
 			console.log('Sector with name '+ radio.device_name +' already exists!')
 		}
-
-
 	}
 
 
@@ -143,7 +140,6 @@ var pSlice = (function(window, google, undefined){
 		header.innerHTML = radio.device_name;
 
 		var elems = ['tx_freq', 'tx_chan_width', 'ip']
-
 		var display_format = {
 			'tx_freq': 			'Frequency:',
 			'tx_chan_width': 	'Channel Width:',
@@ -204,9 +200,8 @@ var pSlice = (function(window, google, undefined){
      });
 
 		sectors.push(sector_polygon);
-		//adds mouse over/out events for each polygon
+		//adds click event to poly
 		add_click_event(sector_polygon, info_window, info_window_location);
-		// onInfoWindow_MouseOut(sector_polygon, info_window, info_window_location);
 	}
 
 
@@ -222,15 +217,20 @@ var pSlice = (function(window, google, undefined){
 
 		var lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(radius/R)*Math.cos(lat1), Math.cos(radius/R)-Math.sin(lat1)*Math.sin(lat2));
 
-		return new google.maps.LatLng(to_degrees(lat2), to_degrees(lon2));
+		destination_point = new google.maps.LatLng(to_degrees(lat2), to_degrees(lon2))
+
+		return destination_point;
 	}
 
 
 	//function that draws the arc based on center pt, intial and final bearings(direction), and radius
 	function get_arc_points(center, bearing, beamwidth, radius){ 
+		//TODO - Clean up naming to be consistent with rest of doc, lowercase_with_underscores
 
+		// Why are we using this when we have to_degrees & to_radians?
 		var d2r = Math.PI / 180;   // degrees to radians 
 		var r2d = 180 / Math.PI;   // radians to degrees 
+
 		var halfBWidth = beamwidth/2;
 		var bearingL = bearing - halfBWidth;
 		var bearingR = bearing + halfBWidth;
@@ -251,21 +251,22 @@ var pSlice = (function(window, google, undefined){
 			//bounds.extend(extp[extp.length-1]);
 		}
 		extp.push(center); 
+
 		return extp;
 	}
 
 
 	//function converts degrees to radians
-	function to_radians(bearing) {
+	function to_radians(degrees) {
 
-		return bearing * Math.PI / 180;
+		return degrees * Math.PI / 180;
 	}
 
 
 	//function converts coordinates to degrees.
-	function to_degrees(lat) {
+	function to_degrees(radians) {
 
-		return lat * 180 / Math.PI;
+		return radians * 180 / Math.PI;
 	}
 
 
@@ -279,8 +280,9 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function that removes tower(name) marker and sectors from the map
+	// Removes site marker by name and associated sectors from the map
 	function remove_marker(name){
+
 		// TODO - consider removing, don't really need this anymore
 		count = 0;
 		for(var i = 0; i < sectors.length; i++){
@@ -333,7 +335,7 @@ var pSlice = (function(window, google, undefined){
 	// Returns new InfoWindow containing content
 	// - content can be DOM node, selector, etc
 	function get_info_window(name, content){
-
+		// TODO - check and see if we can go ahead and set center point here
 		return new google.maps.InfoWindow({
 			name: name,
 	    	content: content
@@ -345,7 +347,9 @@ var pSlice = (function(window, google, undefined){
 	function add_click_event(poly, info_window, info_window_location){
 
 		google.maps.event.addListener(poly,'click', function(){
+			// Should this part not be done when initializing the info_window?
 	    	info_window.setPosition(info_window_location);
+
 			info_window.open(map, poly);
 		});
 	}
@@ -368,6 +372,7 @@ var pSlice = (function(window, google, undefined){
 		}
 	}
 
+
 	return {
 
 		add_radio: function(radio){ return add_radio(radio) },
@@ -377,4 +382,5 @@ var pSlice = (function(window, google, undefined){
 		remove_sector: function(name){ return remove_sector(name) },
 		sectors: function(){ return sectors }
 	}	
+
 })(window, google, undefined);
