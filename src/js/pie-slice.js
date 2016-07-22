@@ -1,13 +1,9 @@
 // TODO //
-// - Fix getRadioInfo() && placeMarker, remove string concatenation to build html
 // - Rename functions using lower_case_with_underscores
 // - Add draw line functionality (will need it for backhauls)
 // 		- should have info window on click with info on both backhauls
-// - draw_sector() or addRadio() should check if sector exists before adding a new one
+// - draw_sector() or add_radio() should check if sector exists before adding a new one
 //		- google.maps.InfoWindow can take a DOM object as content
-// - CREATE add_site(), should take in a tower site and utilize placeMarker
-//		- will want to utilize more info from the db when adding site
-//			- site_number, location, height, type, range
 
 
 var pSlice = (function(window, google, undefined){
@@ -35,29 +31,56 @@ var pSlice = (function(window, google, undefined){
 				lng: -97.058395
 			}
 		};
+	// Initialize the map
 	var map = new google.maps.Map(element, options);
 
 
 	function add_site(site){
 		// site - obj literal
 
+		var site_name = site.site_name;
+
+		// Set up marker
+		var marker_options = {
+			map: map,
+			name: site_name,
+			height: site.height,
+			position: {
+				'lat': site.lat,
+				'lng': site.lng
+			}
+		};
+
+		towers[site_name] = new google.maps.Marker(marker_options);
+
+		var info_window = get_site_info_window(site);
+		info_windows.push(info_window);
+		// Rename this
+		add_click_event(towers[site_name], info_window);
+
+	}
+
+
+	function get_site_info_window(site){
+
+		var site_name = site.site_name
 		// Set up the info window and elements
 		var container = document.createElement('div'),
-			header = document.createElement('h3'),
+			header = document.createElement('h2'),
 			table = document.createElement('talbe');
 
 		container.setAttribute('class', 'site-info-window');
-		table.setAttribute('data-name', site.site_name);
+		table.setAttribute('data-name', site_name);
 		table.setAttribute('class', 'site');
 
-		header.innerHTML = site.site_name;
+		header.innerHTML = site_name;
 
 		container.appendChild(header);
 		container.appendChild(table);
 
-		elems = ['site_number', 'site_range', 'height', 'type']
+		var elems = ['site_number', 'site_range', 'height', 'type']
 
-		display_format = {
+		var display_format = {
 			'site_number': 	'Site Number:',
 			'site_range': 	'Range:',
 			'height': 		'Height:',
@@ -78,69 +101,87 @@ var pSlice = (function(window, google, undefined){
 			table.appendChild(row);
 		}
 
-		var info_window = addInfoWindow(site.site_name, container);
-		info_windows.push(info_window);
+		var info_window = get_info_window(site_name, container);
+
+		return info_window;
+	}
 
 
-		marker_options = {
-			map: map,
-			name: site.site_name,
-			height: site.height,
-			position: {
-				'lat': site.lat,
-				'lng': site.lng
+	//function that adds radio info to tower info_window
+	//Also creates polygon for radio based on bearing, beamwidth, and radius
+	function add_radio(radio){
+		
+		var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
+			azimuth 	= parseFloat(radio.ant_azimuth),
+			beamwidth 	= parseFloat(radio.ant_beamwidth),
+			// Convert range from miles to meters
+			range 		= parseFloat(radio.site_range) * 1609.344;
+		
+		var arcPts = get_arc_points(center, azimuth, beamwidth, range);
+
+
+		var info_window = get_radio_info_window(radio);
+
+  		var windowPt = get_destination_point(center, azimuth, range/2);
+
+  		draw_sector(radio.device_name, radio.site_name, radio.tx_freq, arcPts, info_window, windowPt);
+	}
+
+
+	// Returns new info window containing radio info
+	function get_radio_info_window(radio){
+
+		var container = document.createElement('div'),
+			header = document.createElement('h2'),
+			table = document.createElement('table');
+
+		header.innerHTML = radio.device_name;
+
+		var elems = ['tx_freq', 'tx_chan_width', 'ip']
+
+		var display_format = {
+			'tx_freq': 			'Frequency:',
+			'tx_chan_width': 	'Channel Width:',
+			'ip': 				'Address'
+		}
+
+		for(var i = 0; i < elems.length; i++){
+
+			var row = document.createElement('tr'),
+				col = document.createElement('td'),
+				val = document.createElement('td')
+
+			col.setAttribute('style', 'text-align: left; font-weight: bold;');
+			val.setAttribute('style', 'text-align: right;');
+
+			col.innerHTML = display_format[elems[i]];
+
+			if(elems[i] == 'ip'){
+				var link = document.createElement('a');
+				link.setAttribute('target', '_blank');
+				link.setAttribute('href', 'http://' + radio.ip);
+				link.innerHTML = radio.ip;
+
+				val.appendChild(link);
 			}
+			else{
+				val.innerHTML = radio[elems[i]];
+			}
+
+			row.appendChild(col);
+			row.appendChild(val);
+			table.appendChild(row);
 		}
 
-		towers[site.site_name] = new google.maps.Marker(marker_options);
+		container.appendChild(header);
+		container.appendChild(table);
 
-		onInfoWindow_Click(towers[site.site_name], info_window);
-		onInfoWindow_MouseOut(towers[site.site_name], info_window);
-
+		var radio_window = get_info_window(radio.device_name, container);
+		return radio_window;
 	}
 
 
-
-
-
-	//main function for placing marker(tower location) on map
-	function placeMarker(lat, lng, name, height){
-
-		// if(checkTowers(name) == true){
-		// 	return;
-		// }
-		options = {
-			map: map,
-			name: name,
-			height: height,
-			position: {
-				'lat': lat,
-				'lng': lng
-			},
-		}
-
-		//adds new tower site based on name to towers dictionary
-	    towers[name] = new google.maps.Marker(options);
-
-	    //starts tower content info(name, height) to be added to tower info window
-	    tower_info = '<div id="content">' +
-		    			'<h2 id="name">' + name +'</h1>' + 
-		    			'<table name="info">' + 
-			    			'<tr>' + 
-			    				'<td><b>Height:</b> '+ height + '</td>' + 
-			    			'</tr>' + 
-			    		'</table>' +
-	    			'</div>';
-	    //creates new info window to display tower info
-	    var info_window = addInfoWindow(name, tower_info);
-	    info_windows.push(info_window);
-	    //adds mouse over/out events for each tower
-	    onInfoWindow_Click(towers[name], info_window);
-	    onInfoWindow_MouseOut(towers[name], info_window);
-	}
-
-
-	function checkTowers(name){
+	function site_exists(name){
 
 		for(var tower in towers){
 			if(tower.name == name){
@@ -148,6 +189,46 @@ var pSlice = (function(window, google, undefined){
 			}
 		}
 		return false;
+	}
+
+
+	//function creates new polygon based on arcPts
+	//links info_windows to polygon at windowPt
+	function draw_sector(name, site_name, freq, arcPts, info_window, windowPt){
+		
+		//Draw sector polygon
+		var sector_polygon = new google.maps.Polygon({
+				name: name,
+				site: site_name,
+                paths: [arcPts],
+                strokeColor: "#010078",
+                strokeOpacity: 1,
+                strokeWeight: 2,
+                fillColor: "#010078",//rf.get_color_by_freq(freq),
+                fillOpacity: 0.8,
+                zIndex: global_z_index,
+                map: map
+     });
+
+		sectors.push(sector_polygon);
+		//adds mouse over/out events for each polygon
+		add_click_event(sector_polygon, info_window, windowPt);
+		// onInfoWindow_MouseOut(sector_polygon, info_window, windowPt);
+	}
+
+
+	//function that returns a destination pt based on center coordinates, bearing, and radius
+	function get_destination_point(center, bearing, radius){
+
+		var R = EarthRadiusMeters; // earth's mean radius in meters
+		var bearing = to_radians(bearing);
+		var lat1 = to_radians(center.lat()), lon1 = to_radians(center.lng());
+		var lat2 = Math.asin( Math.sin(lat1)*Math.cos(radius/R) + 
+		                      Math.cos(lat1)*Math.sin(radius/R)*Math.cos(bearing) );
+		var lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(radius/R)*Math.cos(lat1), 
+		                             Math.cos(radius/R)-Math.sin(lat1)*Math.sin(lat2));
+
+		return new google.maps.LatLng(to_degrees(lat2), to_degrees(lon2));
 	}
 
 
@@ -172,7 +253,7 @@ var pSlice = (function(window, google, undefined){
 		deltaBearing = deltaBearing/num_points;
 		for (var i=0; (i < num_points+1); i++) 
 		{ 
-			extp.push(DestinationPoint(center, bearingR + i*deltaBearing, radius)); 
+			extp.push(get_destination_point(center, bearingR + i*deltaBearing, radius)); 
 			//bounds.extend(extp[extp.length-1]);
 		}
 		extp.push(center); 
@@ -180,97 +261,17 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function that return new info window containing radio_info(Ap name and freq)
-	function getRadioInfo(name, freq, band){
-
-		radio_info = '<div id="content">' +
-	    			'<h2 id="radio_name">' + name +'</h1>' + 
-	    			'<table name="radio_info">' + 
-			    		'<tr><td><b>Freq: </b>' + freq + '</td></tr>' +
-						'<tr><td><b>Band: </b> '+ band + '</td></tr>' +
-					'</table>' +
-	    		'</div>';
-		var rad_Window = addInfoWindow(name, radio_info);
-		return rad_Window;
-	}
-
-
-	//function creates new polygon based on arcPts
-	//links info_windows to polygon at windowPt
-	function draw_sector(name, site_name, freq, arcPts, info_window, windowPt){
-		
-		//Draw sector polygon
-		var sector_polygon = new google.maps.Polygon({
-				name: name,
-				site: site_name,
-                paths: [arcPts],
-                strokeColor: "#010078",
-                strokeOpacity: 1,
-                strokeWeight: 2,
-                fillColor: "#010078",//rf.get_color_by_freq(freq),
-                fillOpacity: 0.8,
-                zIndex: global_z_index,
-                map: map
-     });
-
-		sectors.push(sector_polygon);
-		//info_window.bindTo('map', sector_polygon);
-		//adds mouse over/out events for each polygon
-		onInfoWindow_Click(sector_polygon, info_window, windowPt);
-		onInfoWindow_MouseOut(sector_polygon, info_window, windowPt);
-	}
-
-
-	//function that returns a destination pt based on center coordinates, bearing, and radius
-	function DestinationPoint(center, bearing, radius){
-
-		var R = EarthRadiusMeters; // earth's mean radius in meters
-		var bearing = toRad(bearing);
-		var lat1 = toRad(center.lat()), lon1 = toRad(center.lng());
-		var lat2 = Math.asin( Math.sin(lat1)*Math.cos(radius/R) + 
-		                      Math.cos(lat1)*Math.sin(radius/R)*Math.cos(bearing) );
-		var lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(radius/R)*Math.cos(lat1), 
-		                             Math.cos(radius/R)-Math.sin(lat1)*Math.sin(lat2));
-
-		return new google.maps.LatLng(toDeg(lat2), toDeg(lon2));
-	}
-
-
 	//function converts degrees to radians
-	function toRad(bearing) {
+	function to_radians(bearing) {
 
 		return bearing * Math.PI / 180;
 	}
 
 
 	//function converts coordinates to degrees.
-	function toDeg(lat) {
+	function to_degrees(lat) {
 
 		return lat * 180 / Math.PI;
-	}
-
-
-	//function that adds radio info to tower info_window
-	//Also creates polygon for radio based on bearing, beamwidth, and radius
-	function addRadio(radio){
-
-		console.log(radio)
-		
-		var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
-			azimuth 	= parseFloat(radio.ant_azimuth),
-			beamwidth 	= parseFloat(radio.ant_beamwidth),
-			// Convert range from miles to meters
-			range 		= parseFloat(radio.site_range) * 1609.344;
-		placeMarker(center.lat(), center.lng(), radio.site_name, radio.site_height);
-		
-		var arcPts = get_arc_points(center, azimuth, beamwidth, range);
-
-
-		var info_window = getRadioInfo(radio.device_name, radio.tx_freq, radio.band);
-
-  		var windowPt = DestinationPoint(center, azimuth, range/2);
-
-  		draw_sector(radio.device_name, radio.site_name, radio.tx_freq, arcPts, info_window, windowPt);
 	}
 
 
@@ -285,7 +286,7 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function that removes tower(name) marker and sectors from the map
-	function removeMarker(name){
+	function remove_marker(name){
 
 		count = 0;
 		for(var i = 0; i<sectors.length; i++){
@@ -303,13 +304,12 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function to remove a specific sector
-	function removeSector(name){
+	function remove_sector(name){
 
-		var siteEmpty = false;
 		for(var i = 0; i<sectors.length; i++){
 			if(sectors[i].name == name){
 				sectors[i].setMap(null);
-				sectors.splice(i,1);
+				sectors.splice(i, 1);
 			}
 		}
 		
@@ -317,7 +317,7 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function that returns new info_window containing tower_info
-	function addInfoWindow(name, tower_info){
+	function get_info_window(name, tower_info){
 
 		return new google.maps.InfoWindow({
 			name: name,
@@ -327,7 +327,7 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function for adding mouse over event to poly, opening info_window on windowPt
-	function onInfoWindow_Click(poly, info_window, windowPt){
+	function add_click_event(poly, info_window, windowPt){
 
 		google.maps.event.addListener(poly,'click', function(){
 	    	info_window.setPosition(windowPt);
@@ -364,12 +364,11 @@ var pSlice = (function(window, google, undefined){
 
 	return {
 
-		placeMarker: function(lat, lng, name, height){ return placeMarker(lat, lng, name, height) },
-		removeMarker: function(name){ return removeMarker(name) },
-		removeSector: function(name){ return removeSector(name) },
-		addRadio: function(radio){ return addRadio(radio) },
-		sectors: function(){ return sectors },
+		add_radio: function(radio){ return add_radio(radio) },
+		add_site: function(site){ return add_site(site) },
 		toggle_sector: function(name){ return toggle_sector(name) },
-		add_site: function(site){ return add_site(site) }
+		remove_marker: function(name){ return remove_marker(name) },
+		remove_sector: function(name){ return remove_sector(name) },
+		sectors: function(){ return sectors }
 	}	
 })(window, google, undefined);
