@@ -8,10 +8,6 @@
 // - CREATE add_site(), should take in a tower site and utilize placeMarker
 //		- will want to utilize more info from the db when adding site
 //			- site_number, location, height, type, range
-// - Change on mouseover events to onclick events
-//		- too many pop up info windows in close proximity
-//		- hover event is jerky when moving in/out of info windows
-
 
 
 var pSlice = (function(window, google, undefined){
@@ -98,7 +94,7 @@ var pSlice = (function(window, google, undefined){
 
 		towers[site.site_name] = new google.maps.Marker(marker_options);
 
-		onInfoWindow_MouseOver(towers[site.site_name], info_window);
+		onInfoWindow_Click(towers[site.site_name], info_window);
 		onInfoWindow_MouseOut(towers[site.site_name], info_window);
 
 	}
@@ -139,7 +135,7 @@ var pSlice = (function(window, google, undefined){
 	    var info_window = addInfoWindow(name, tower_info);
 	    info_windows.push(info_window);
 	    //adds mouse over/out events for each tower
-	    onInfoWindow_MouseOver(towers[name], info_window);
+	    onInfoWindow_Click(towers[name], info_window);
 	    onInfoWindow_MouseOut(towers[name], info_window);
 	}
 
@@ -211,7 +207,7 @@ var pSlice = (function(window, google, undefined){
                 strokeColor: "#010078",
                 strokeOpacity: 1,
                 strokeWeight: 2,
-                fillColor: rf.get_color_by_freq(freq),
+                fillColor: "#010078",//rf.get_color_by_freq(freq),
                 fillOpacity: 0.8,
                 zIndex: global_z_index,
                 map: map
@@ -220,7 +216,7 @@ var pSlice = (function(window, google, undefined){
 		sectors.push(sector_polygon);
 		//info_window.bindTo('map', sector_polygon);
 		//adds mouse over/out events for each polygon
-		onInfoWindow_MouseOver(sector_polygon, info_window, windowPt);
+		onInfoWindow_Click(sector_polygon, info_window, windowPt);
 		onInfoWindow_MouseOut(sector_polygon, info_window, windowPt);
 	}
 
@@ -258,12 +254,13 @@ var pSlice = (function(window, google, undefined){
 	//Also creates polygon for radio based on bearing, beamwidth, and radius
 	function addRadio(radio){
 
+		console.log(radio)
 		
 		var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
 			azimuth 	= parseFloat(radio.ant_azimuth),
 			beamwidth 	= parseFloat(radio.ant_beamwidth),
 			// Convert range from miles to meters
-			range 		= parseFloat(radio.site_range) * 1609.344
+			range 		= parseFloat(radio.site_range) * 1609.344;
 		placeMarker(center.lat(), center.lng(), radio.site_name, radio.site_height);
 		
 		var arcPts = get_arc_points(center, azimuth, beamwidth, range);
@@ -330,9 +327,9 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function for adding mouse over event to poly, opening info_window on windowPt
-	function onInfoWindow_MouseOver(poly, info_window, windowPt){
+	function onInfoWindow_Click(poly, info_window, windowPt){
 
-		google.maps.event.addListener(poly,'mouseover', function(){
+		google.maps.event.addListener(poly,'click', function(){
 	    	info_window.setPosition(windowPt);
 			info_window.open(map, poly);
 		});
@@ -376,4 +373,3 @@ var pSlice = (function(window, google, undefined){
 		add_site: function(site){ return add_site(site) }
 	}	
 })(window, google, undefined);
-
