@@ -13,6 +13,7 @@ var test_radio = {
 		ip: '10.1.5.2',
 		tx_chan_width: 20
 };
+pSlice.add_radio(test_radio);
 
 var test_site = {
 	'site_name': 	'Test Site 1',
@@ -23,6 +24,4 @@ var test_site = {
 	'lat': 			36.1132317,
 	'lng': 			-97.0583649
 };
-
 pSlice.add_site(test_site);
-pSlice.add_radio(test_radio);

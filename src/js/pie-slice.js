@@ -1,9 +1,6 @@
 // TODO //
-// - Rename functions using lower_case_with_underscores
 // - Add draw line functionality (will need it for backhauls)
 // 		- should have info window on click with info on both backhauls
-// - draw_sector() or add_radio() should check if sector exists before adding a new one
-//		- google.maps.InfoWindow can take a DOM object as content
 
 
 var pSlice = (function(window, google, undefined){
@@ -13,12 +10,12 @@ var pSlice = (function(window, google, undefined){
 	var towers = {},
 		info_windows = [],
 		sectors = [],
-		EarthRadiusMeters = 6378137.0, // meters
-		element = document.getElementById('gmap-canvas'),
+		EarthRadiusMeters = 6378137.0, // earth radius in meters
+		map_element = document.getElementById('gmap-canvas'),
 		global_z_index = 1;
 
 	// Set up map options 
-	var options = {
+	var map_options = {
     		mapTypeId: google.maps.MapTypeId.ROADMAP,
 			scrollwheel: false,
 			zoom: 10,
@@ -32,7 +29,7 @@ var pSlice = (function(window, google, undefined){
 			}
 		};
 	// Initialize the map
-	var map = new google.maps.Map(element, options);
+	var map = new google.maps.Map(map_element, map_options);
 
 
 	function add_site(site){
@@ -111,20 +108,28 @@ var pSlice = (function(window, google, undefined){
 	//Also creates polygon for radio based on bearing, beamwidth, and radius
 	function add_radio(radio){
 		
-		var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
-			azimuth 	= parseFloat(radio.ant_azimuth),
-			beamwidth 	= parseFloat(radio.ant_beamwidth),
-			// Convert range from miles to meters
-			range 		= parseFloat(radio.site_range) * 1609.344;
-		
-		// gets points needed to draw the arc
-		var arc_points = get_arc_points(center, azimuth, beamwidth, range);
+		if(!sector_exists(radio.device_name)){
 
-		var info_window = get_radio_info_window(radio);
+			var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
+				azimuth 	= parseFloat(radio.ant_azimuth),
+				beamwidth 	= parseFloat(radio.ant_beamwidth),
+				// Convert range from miles to meters
+				range 		= parseFloat(radio.site_range) * 1609.344;
+			
+			// gets points needed to draw the arc
+			var arc_points = get_arc_points(center, azimuth, beamwidth, range);
 
-  		var info_window_location = get_destination_point(center, azimuth, range/2);
+			var info_window = get_radio_info_window(radio);
 
-  		draw_sector(radio.device_name, arc_points, info_window, info_window_location);
+	  		var info_window_location = get_destination_point(center, azimuth, range/2);
+
+	  		draw_sector_polygon(radio.device_name, arc_points, info_window, info_window_location);
+		}
+		else{
+			console.log('Sector with name '+ radio.device_name +' already exists!')
+		}
+
+
 	}
 
 
@@ -183,7 +188,7 @@ var pSlice = (function(window, google, undefined){
 
 	//function creates new polygon based on arc_points
 	//links info_windows to polygon at info_window_location
-	function draw_sector(name, arc_points, info_window, info_window_location){
+	function draw_sector_polygon(name, arc_points, info_window, info_window_location){
 		
 		//Draw sector polygon
 		var sector_polygon = new google.maps.Polygon({
@@ -191,7 +196,7 @@ var pSlice = (function(window, google, undefined){
                 paths: [arc_points],
                 strokeColor: "#010078",
                 strokeOpacity: 1,
-                strokeWeight: 2,
+                strokeWeight: 2,                
                 fillColor: "#010078",//rf.get_color_by_freq(freq),
                 fillOpacity: 0.8,
                 zIndex: global_z_index,
@@ -210,11 +215,12 @@ var pSlice = (function(window, google, undefined){
 
 		var R = EarthRadiusMeters; // earth's mean radius in meters
 		var bearing = to_radians(bearing);
+
 		var lat1 = to_radians(center.lat()), lon1 = to_radians(center.lng());
-		var lat2 = Math.asin( Math.sin(lat1)*Math.cos(radius/R) + 
-		                      Math.cos(lat1)*Math.sin(radius/R)*Math.cos(bearing) );
-		var lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(radius/R)*Math.cos(lat1), 
-		                             Math.cos(radius/R)-Math.sin(lat1)*Math.sin(lat2));
+
+		var lat2 = Math.asin( Math.sin(lat1)*Math.cos(radius/R) + Math.cos(lat1)*Math.sin(radius/R)*Math.cos(bearing) );
+
+		var lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(radius/R)*Math.cos(lat1), Math.cos(radius/R)-Math.sin(lat1)*Math.sin(lat2));
 
 		return new google.maps.LatLng(to_degrees(lat2), to_degrees(lon2));
 	}
@@ -275,7 +281,7 @@ var pSlice = (function(window, google, undefined){
 
 	//function that removes tower(name) marker and sectors from the map
 	function remove_marker(name){
-
+		// TODO - consider removing, don't really need this anymore
 		count = 0;
 		for(var i = 0; i < sectors.length; i++){
 
@@ -294,6 +300,17 @@ var pSlice = (function(window, google, undefined){
 
 		for(var tower in towers){
 			if(tower.name == name){
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	function sector_exists(name){
+
+		for(var i = 0; i < sectors.length; i++){
+			if(sectors[i].name == name){
 				return true;
 			}
 		}
@@ -332,6 +349,7 @@ var pSlice = (function(window, google, undefined){
 			info_window.open(map, poly);
 		});
 	}
+
 
 	var toggle_sector = function(name){
 
