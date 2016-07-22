@@ -22,7 +22,7 @@ var pSlice = (function(window, google, undefined){
 		info_windows = [],
 		sectors = [],
 		EarthRadiusMeters = 6378137.0, // meters
-		element = document.getElementById('gmap_canvas'),
+		element = document.getElementById('gmap-canvas'),
 		global_z_index = 1;
 
 	// Set up map options 
@@ -45,12 +45,14 @@ var pSlice = (function(window, google, undefined){
 	function add_site(site){
 		// site - obj literal
 
+		// Set up the info window and elements
 		var container = document.createElement('div'),
-			header = document.createElement('h2'),
+			header = document.createElement('h3'),
 			table = document.createElement('talbe');
 
 		container.setAttribute('class', 'site-info-window');
 		table.setAttribute('data-name', site.site_name);
+		table.setAttribute('class', 'site');
 
 		header.innerHTML = site.site_name;
 
@@ -59,12 +61,21 @@ var pSlice = (function(window, google, undefined){
 
 		elems = ['site_number', 'site_range', 'height', 'type']
 
+		display_format = {
+			'site_number': 	'Site Number:',
+			'site_range': 	'Range:',
+			'height': 		'Height:',
+			'type': 		'Type:'
+		}
+
 		for(var i = 0; i < elems.length; i++){
 			var row = document.createElement('tr'),
 				col = document.createElement('td'),
 				val = document.createElement('td')
 
-			col.innerHTML = elems[i];
+			col.setAttribute('style', 'text-align: left; font-weight: bold');
+			val.setAttribute('style', 'text-align: right;');
+			col.innerHTML = display_format[elems[i]];
 			val.innerHTML = site[elems[i]];
 			row.appendChild(col);
 			row.appendChild(val);
