@@ -16,6 +16,7 @@
 
 var pSlice = (function(window, google, undefined){
 
+
 	//Global Variables
 	var towers = {},
 		info_windows = [],
@@ -39,6 +40,61 @@ var pSlice = (function(window, google, undefined){
 			}
 		};
 	var map = new google.maps.Map(element, options);
+
+
+	function add_site(site){
+		// site - obj literal
+
+		var container = document.createElement('div'),
+			header = document.createElement('h2'),
+			table = document.createElement('talbe');
+
+		container.setAttribute('class', 'site-info-window');
+		table.setAttribute('data-name', site.site_name);
+
+		header.innerHTML = site.site_name;
+
+		container.appendChild(header);
+		container.appendChild(table);
+
+		elems = ['site_number', 'site_range', 'height', 'type']
+
+		for(var i = 0; i < elems.length; i++){
+			var row = document.createElement('tr'),
+				col = document.createElement('td'),
+				val = document.createElement('td')
+
+			col.innerHTML = elems[i];
+			val.innerHTML = site[elems[i]];
+			row.appendChild(col);
+			row.appendChild(val);
+			table.appendChild(row);
+		}
+
+		var info_window = addInfoWindow(site.site_name, container);
+		info_windows.push(info_window);
+
+
+		marker_options = {
+			map: map,
+			name: site.site_name,
+			height: site.height,
+			position: {
+				'lat': site.lat,
+				'lng': site.lng
+			}
+		}
+
+		towers[site.site_name] = new google.maps.Marker(marker_options);
+
+		onInfoWindow_MouseOver(towers[site.site_name], info_window);
+		onInfoWindow_MouseOut(towers[site.site_name], info_window);
+
+	}
+
+
+
+
 
 	//main function for placing marker(tower location) on map
 	function placeMarker(lat, lng, name, height){
@@ -289,6 +345,7 @@ var pSlice = (function(window, google, undefined){
 					sectors[i].setMap(null)
 				}
 				else{
+					// Increment global_z_index so sector appears on top when toggled on
 					global_z_index++;
 					sectors[i].setOptions({zIndex: global_z_index})
 					sectors[i].setMap(map)
@@ -304,79 +361,8 @@ var pSlice = (function(window, google, undefined){
 		removeSector: function(name){ return removeSector(name) },
 		addRadio: function(radio){ return addRadio(radio) },
 		sectors: function(){ return sectors },
-		toggle_sector: function(name){ return toggle_sector(name) }
+		toggle_sector: function(name){ return toggle_sector(name) },
+		add_site: function(site){ return add_site(site) }
 	}	
 })(window, google, undefined);
 
-
-
-
-
-// Test data
-
-// var r = {
-// 		name: 'testAp',
-// 		site: 'pvn',
-// 		freq: 2400,
-// 		band: 2.5,
-// 		bearing: 160,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 };
-// var testRadio = {
-// 		name: 'testAp2',
-// 		site: 'pvn',
-// 		freq: 2675,
-// 		band: 5.8,
-// 		bearing: 300,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 
-// 		};
-// var center = new google.maps.LatLng(36.113225, -97.058395);
-// var x = {
-// 		name: 'testAp3',
-// 		site: 'pvn',
-// 		freq: 2450,
-// 		band: 2.8,
-// 		bearing: 200,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34  };
-// var y = {
-// 		name: 'testAp4',
-// 		site: 'pvn',
-// 		freq: 2075,
-// 		band: 5.2,
-// 		bearing: 60,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 
-// 		};
-// var t = {
-// 		name: 'testAp5',
-// 		site: '51E',
-// 		freq: 2550,
-// 		band: 2.6,
-// 		bearing: 90,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34  };
-// var v =	{
-// 		name: 'testAp6',
-// 		site: '51E',
-// 		freq: 2185,
-// 		band: 5,
-// 		bearing: 235,
-// 		beamwidth: 70,
-// 		radius: 10*1609.34 
-// 		};
-// pSlice.placeMarker(36.113225, -97.058395, 'pvn', 100);
-// pSlice.addRadio(center, r);
-// pSlice.addRadio(center, testRadio);
-// pSlice.addRadio(center, x);
-// pSlice.addRadio(center, y);
-
-// pSlice.placeMarker(36.122800, -96.924912, '51E', 75);
-// center = new google.maps.LatLng(36.122800, -96.924912);
-// pSlice.addRadio(center, t);
-// pSlice.addRadio(center, v);
-
-
-
-// pSlice.placeMarker(35.940088, -97.303856, 'Langston', 220, t);
