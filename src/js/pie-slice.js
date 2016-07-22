@@ -117,14 +117,14 @@ var pSlice = (function(window, google, undefined){
 			// Convert range from miles to meters
 			range 		= parseFloat(radio.site_range) * 1609.344;
 		
-		var arcPts = get_arc_points(center, azimuth, beamwidth, range);
-
+		// gets points needed to draw the arc
+		var arc_points = get_arc_points(center, azimuth, beamwidth, range);
 
 		var info_window = get_radio_info_window(radio);
 
-  		var windowPt = get_destination_point(center, azimuth, range/2);
+  		var info_window_location = get_destination_point(center, azimuth, range/2);
 
-  		draw_sector(radio.device_name, radio.site_name, radio.tx_freq, arcPts, info_window, windowPt);
+  		draw_sector(radio.device_name, arc_points, info_window, info_window_location);
 	}
 
 
@@ -181,26 +181,14 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	function site_exists(name){
-
-		for(var tower in towers){
-			if(tower.name == name){
-				return true;
-			}
-		}
-		return false;
-	}
-
-
-	//function creates new polygon based on arcPts
-	//links info_windows to polygon at windowPt
-	function draw_sector(name, site_name, freq, arcPts, info_window, windowPt){
+	//function creates new polygon based on arc_points
+	//links info_windows to polygon at info_window_location
+	function draw_sector(name, arc_points, info_window, info_window_location){
 		
 		//Draw sector polygon
 		var sector_polygon = new google.maps.Polygon({
 				name: name,
-				site: site_name,
-                paths: [arcPts],
+                paths: [arc_points],
                 strokeColor: "#010078",
                 strokeOpacity: 1,
                 strokeWeight: 2,
@@ -212,8 +200,8 @@ var pSlice = (function(window, google, undefined){
 
 		sectors.push(sector_polygon);
 		//adds mouse over/out events for each polygon
-		add_click_event(sector_polygon, info_window, windowPt);
-		// onInfoWindow_MouseOut(sector_polygon, info_window, windowPt);
+		add_click_event(sector_polygon, info_window, info_window_location);
+		// onInfoWindow_MouseOut(sector_polygon, info_window, info_window_location);
 	}
 
 
@@ -275,8 +263,8 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function for set map center to lat, lng
-	function setCenter(lat, lng){
+	// Sets map center to lat, lng
+	function set_center(lat, lng){
 
 		map.setCenter({
 	      'lat': lat,
@@ -289,9 +277,8 @@ var pSlice = (function(window, google, undefined){
 	function remove_marker(name){
 
 		count = 0;
-		for(var i = 0; i<sectors.length; i++){
-			console.log('count is: ' + count)
-			console.log(i)
+		for(var i = 0; i < sectors.length; i++){
+
 			if(sectors[i].site == name){
 				sectors[i].setMap(null);
 				sectors.splice(i,1);
@@ -303,6 +290,17 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
+	function site_exists(name){
+
+		for(var tower in towers){
+			if(tower.name == name){
+				return true;
+			}
+		}
+		return false;
+	}
+
+
 	//function to remove a specific sector
 	function remove_sector(name){
 
@@ -311,39 +309,29 @@ var pSlice = (function(window, google, undefined){
 				sectors[i].setMap(null);
 				sectors.splice(i, 1);
 			}
-		}
-		
+		}	
 	}
 
 
-	//function that returns new info_window containing tower_info
-	function get_info_window(name, tower_info){
+	// Returns new InfoWindow containing content
+	// - content can be DOM node, selector, etc
+	function get_info_window(name, content){
 
 		return new google.maps.InfoWindow({
 			name: name,
-	    	content: tower_info
+	    	content: content
 	    	});
 	}
 
 
-	//function for adding mouse over event to poly, opening info_window on windowPt
-	function add_click_event(poly, info_window, windowPt){
+	// Adds click event for info_window positioned at info_window_location
+	function add_click_event(poly, info_window, info_window_location){
 
 		google.maps.event.addListener(poly,'click', function(){
-	    	info_window.setPosition(windowPt);
+	    	info_window.setPosition(info_window_location);
 			info_window.open(map, poly);
 		});
 	}
-
-
-	//function for adding mouse out event to item, closes info_window
-	function onInfoWindow_MouseOut(poly, info_window){
-
-		google.maps.event.addListener(poly,'mouseout', function(){
-			info_window.close(map, poly);
-		});
-	}
-
 
 	var toggle_sector = function(name){
 
