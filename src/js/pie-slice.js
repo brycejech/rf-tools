@@ -8,10 +8,6 @@
 // - CREATE add_site(), should take in a tower site and utilize placeMarker
 //		- will want to utilize more info from the db when adding site
 //			- site_number, location, height, type, range
-// - Change on mouseover events to onclick events
-//		- too many pop up info windows in close proximity
-//		- hover event is jerky when moving in/out of info windows
-
 
 
 var pSlice = (function(window, google, undefined){
@@ -72,7 +68,7 @@ var pSlice = (function(window, google, undefined){
 	    var info_window = addInfoWindow(name, tower_info);
 	    info_windows.push(info_window);
 	    //adds mouse over/out events for each tower
-	    onInfoWindow_MouseOver(towers[name], info_window);
+	    onInfoWindow_Click(towers[name], info_window);
 	    onInfoWindow_MouseOut(towers[name], info_window);
 	}
 
@@ -144,7 +140,7 @@ var pSlice = (function(window, google, undefined){
                 strokeColor: "#010078",
                 strokeOpacity: 1,
                 strokeWeight: 2,
-                fillColor: rf.get_color_by_freq(freq),
+                fillColor: "#010078",//rf.get_color_by_freq(freq),
                 fillOpacity: 0.8,
                 zIndex: global_z_index,
                 map: map
@@ -153,7 +149,7 @@ var pSlice = (function(window, google, undefined){
 		sectors.push(sector_polygon);
 		//info_window.bindTo('map', sector_polygon);
 		//adds mouse over/out events for each polygon
-		onInfoWindow_MouseOver(sector_polygon, info_window, windowPt);
+		onInfoWindow_Click(sector_polygon, info_window, windowPt);
 		onInfoWindow_MouseOut(sector_polygon, info_window, windowPt);
 	}
 
@@ -191,12 +187,13 @@ var pSlice = (function(window, google, undefined){
 	//Also creates polygon for radio based on bearing, beamwidth, and radius
 	function addRadio(radio){
 
+		console.log(radio)
 		
 		var center 		= new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
 			azimuth 	= parseFloat(radio.ant_azimuth),
 			beamwidth 	= parseFloat(radio.ant_beamwidth),
 			// Convert range from miles to meters
-			range 		= parseFloat(radio.site_range) * 1609.344
+			range 		= parseFloat(radio.site_range) * 1609.344;
 		placeMarker(center.lat(), center.lng(), radio.site_name, radio.site_height);
 		
 		var arcPts = get_arc_points(center, azimuth, beamwidth, range);
@@ -263,9 +260,9 @@ var pSlice = (function(window, google, undefined){
 
 
 	//function for adding mouse over event to poly, opening info_window on windowPt
-	function onInfoWindow_MouseOver(poly, info_window, windowPt){
+	function onInfoWindow_Click(poly, info_window, windowPt){
 
-		google.maps.event.addListener(poly,'mouseover', function(){
+		google.maps.event.addListener(poly,'click', function(){
 	    	info_window.setPosition(windowPt);
 			info_window.open(map, poly);
 		});
@@ -309,68 +306,78 @@ var pSlice = (function(window, google, undefined){
 })(window, google, undefined);
 
 
+//Test data
 
-
-
-// Test data
-
-// var r = {
-// 		name: 'testAp',
-// 		site: 'pvn',
-// 		freq: 2400,
-// 		band: 2.5,
-// 		bearing: 160,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 };
-// var testRadio = {
-// 		name: 'testAp2',
-// 		site: 'pvn',
-// 		freq: 2675,
-// 		band: 5.8,
-// 		bearing: 300,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 
-// 		};
-// var center = new google.maps.LatLng(36.113225, -97.058395);
-// var x = {
-// 		name: 'testAp3',
-// 		site: 'pvn',
-// 		freq: 2450,
-// 		band: 2.8,
-// 		bearing: 200,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34  };
-// var y = {
-// 		name: 'testAp4',
-// 		site: 'pvn',
-// 		freq: 2075,
-// 		band: 5.2,
-// 		bearing: 60,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34 
-// 		};
+var r = {
+		site_height: 100,
+		lat: 36.113225,
+		lng: -97.058395,
+		deivce_name: 'testAp',
+		site_name: 'pvn',
+		tx_freq: 2400,
+		band: 2.5,
+		ant_azimuth: 160,
+		ant_beamwidth: 90,
+		site_range: 10 };
+var testRadio = {
+		site_height: 100,
+		lat: 36.113225,
+		lng: -97.058395,
+		deivce_name: 'testAp2',
+		site_name: 'pvn',
+		tx_freq: 2675,
+		band: 5.8,
+		ant_azimuth: 300,
+		ant_beamwidth: 90,
+		site_range: 10 };
+//var center = new google.maps.LatLng(36.113225, -97.058395);
+var x = {
+		site_height: 100,
+		lat: 36.113225,
+		lng: -97.058395,
+		deivce_name: 'testAp3',
+		site_name: 'pvn',
+		tx_freq: 2450,
+		band: 2.8,
+		ant_azimuth: 200,
+		ant_beamwidth: 90,
+		site_range: 10 
+	};
+var y = {
+		site_height: 100,
+		lat: 36.113225,
+		lng: -97.058395,
+		device_name: 'testAp4',
+		site_name: 'pvn',
+		tx_freq: 2075,
+		band: 5.2,
+		ant_azimuth: 60,
+		ant_beamwidth: 90,
+		site_range: 10 
+		};
 // var t = {
-// 		name: 'testAp5',
-// 		site: '51E',
-// 		freq: 2550,
+
+// 		device_name: 'testAp5',
+// 		site_name: '51E',
+// 		tx_freq: 2550,
 // 		band: 2.6,
-// 		bearing: 90,
-// 		beamwidth: 90,
-// 		radius: 10*1609.34  };
+// 		ant_bearing: 90,
+// 		ant_beamwidth: 90,
+// 		site_range: 10*1609.34  };
 // var v =	{
-// 		name: 'testAp6',
-// 		site: '51E',
-// 		freq: 2185,
+// 		device_name: 'testAp6',
+// 		site_name: '51E',
+// 		tx_freq: 2185,
 // 		band: 5,
-// 		bearing: 235,
-// 		beamwidth: 70,
-// 		radius: 10*1609.34 
+// 		ant_bearing: 235,
+// 		ant_beamwidth: 70,
+// 		site_range: 10*1609.34 
 // 		};
-// pSlice.placeMarker(36.113225, -97.058395, 'pvn', 100);
-// pSlice.addRadio(center, r);
-// pSlice.addRadio(center, testRadio);
-// pSlice.addRadio(center, x);
-// pSlice.addRadio(center, y);
+pSlice.placeMarker(36.113225, -97.058395, 'pvn', 100);
+pSlice.addRadio(r);
+pSlice.addRadio(testRadio);
+pSlice.addRadio(x);
+pSlice.addRadio(y);
 
 // pSlice.placeMarker(36.122800, -96.924912, '51E', 75);
 // center = new google.maps.LatLng(36.122800, -96.924912);
