@@ -1,8 +1,8 @@
 // File for testing pie-slice.js
 
 var test_radio = {
-		lat: 36.113225,
-		lng: -97.058395,
+		lat: 36.1132317,
+		lng: -97.0583649,
 		device_name: 'Test AP 1',
 		site_name: 'Test Site 1',
 		tx_freq: 2400,
