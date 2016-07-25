@@ -3,14 +3,14 @@
 var test_radio = {
 		lat: 36.113225,
 		lng: -97.058395,
-		device_name: 'testAp',
-		site_name: 'pvn',
+		device_name: 'Test AP 1',
+		site_name: 'Test Site 1',
 		tx_freq: 2400,
 		band: 2.5,
 		ant_azimuth: 180,
 		ant_beamwidth: 90,
 		site_range: 10,
-		ip: '10.1.5.2',
+		ip: '127.0.0.1',
 		tx_chan_width: 20
 };
 pSlice.add_radio(test_radio);
