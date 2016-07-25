@@ -43,8 +43,8 @@ var pSlice = (function(window, google, undefined){
 			name: site_name,
 			height: site.height,
 			position: {
-				'lat': site.lat,
-				'lng': site.lng
+				'lat': parseFloat(site.lat),
+				'lng': parseFloat(site.lng)
 			}
 		};
 
@@ -78,8 +78,8 @@ var pSlice = (function(window, google, undefined){
 
 		var display_format = {
 			'site_number': 	'Site Number:',
-			'site_range': 	'Range:',
-			'height': 		'Height:',
+			'site_range': 	'Range (mi):',
+			'height': 		'Height (ft):',
 			'type': 		'Type:'
 		}
 
@@ -98,6 +98,14 @@ var pSlice = (function(window, google, undefined){
 		}
 
 		var info_window = get_info_window(site_name, container);
+
+		// Calculate info_window location
+		var lat = parseFloat(site.lat),
+			lng = parseFloat(site.lng);
+
+		var info_window_location = new google.maps.LatLng(lat, lng);
+
+		info_window.setPosition(info_window_location);
 
 		return info_window;
 	}
@@ -119,10 +127,11 @@ var pSlice = (function(window, google, undefined){
 			var arc_points = get_arc_points(center, azimuth, beamwidth, range);
 
 			var info_window = get_radio_info_window(radio);
+			info_windows.push(info_window);
 
 	  		var info_window_location = get_destination_point(center, azimuth, range/2);
 
-	  		draw_sector_polygon(radio.device_name, arc_points, info_window, info_window_location);
+	  		draw_sector_polygon(radio.device_name, arc_points, info_window, info_window_location, radio.tx_freq);
 		}
 		else{
 			console.log('Sector with name '+ radio.device_name +' already exists!')
@@ -177,14 +186,130 @@ var pSlice = (function(window, google, undefined){
 		container.appendChild(header);
 		container.appendChild(table);
 
-		var radio_window = get_info_window(radio.device_name, container);
-		return radio_window;
+		var info_window = get_info_window(radio.device_name, container);
+
+		// Calculate info_window location
+		var center = new google.maps.LatLng(parseFloat(radio.lat), parseFloat(radio.lng)),
+			azimuth = parseFloat(radio.ant_azimuth),
+			range = parseFloat(radio.site_range) * 1609.344;
+
+		var info_window_location = get_destination_point(center, azimuth, range/2);
+
+		info_window.setPosition(info_window_location);
+
+		return info_window;
+	}
+
+
+	function add_backhaul(radio1, radio2){
+
+		var lat1 = parseFloat(radio1.lat),
+			lng1 = parseFloat(radio1.lng),
+			lat2 = parseFloat(radio2.lat),
+			lng2 = parseFloat(radio2.lng);
+
+		var pos1 = new google.maps.LatLng(lat1, lng1),
+			pos2 = new google.maps.LatLng(lat2, lng2);
+
+		var backhaul_path = [pos1, pos2]
+
+		var line = new google.maps.Polyline({
+			path: backhaul_path,
+			geodesic: true,
+			strokeColor: '#010078',
+			strokeOpacity: 1,
+			strokeWeight: 3
+		});
+
+		line.setMap(map);
+
+		var info_window = get_backhaul_info_window(radio1, radio2);
+		info_windows.push(info_window);
+
+		add_click_event(line, info_window);
+	}
+
+
+	function get_backhaul_info_window(radio1, radio2){
+
+
+		var elems = ['device_name', 'ssid', 'tx_freq', 'tx_chan_width', 'site_name']
+
+		var display_format = {
+			'device_name': 		'Device Name:',
+			'ssid': 			'SSID:',
+			'tx_freq': 			'Frequency:',
+			'tx_chan_width': 	'Channel Width:',
+			'site_name': 		'Site:'
+		}
+
+		var container = document.createElement('div'),
+			header = document.createElement('h2'),
+			table1 = document.createElement('table'),
+			table2 = document.createElement('table');
+
+		header.innerHTML = radio1.ssid;
+
+		table1.setAttribute('style', 'display: inline-block; margin-right: 25px');
+		table2.setAttribute('style', 'display: inline-block');
+
+		for(var i = 0; i < elems.length; i++){
+
+			var row1 = document.createElement('tr'),
+				col1 = document.createElement('td'),
+				data1 = document.createElement('td'),
+				row2 = document.createElement('tr'),
+				col2 = document.createElement('td'),
+				data2 = document.createElement('td');
+
+
+			col1.setAttribute('style', 'text-align:left; font-weight:bold;');
+			col2.setAttribute('style', 'text-align:left; font-weight:bold;');
+			data1.setAttribute('style', 'text-align:right;');
+			data2.setAttribute('style', 'text-align:right;');
+
+			col1.innerHTML = display_format[elems[i]];
+			data1.innerHTML = radio1[elems[i]];
+
+			col2.innerHTML = display_format[elems[i]];
+			data2.innerHTML = radio2[elems[i]];
+
+			row1.appendChild(col1);
+			row1.appendChild(data1);
+			table1.appendChild(row1);
+
+			row2.appendChild(col2);
+			row2.appendChild(data2);
+			table2.appendChild(row2);
+		}
+
+		container.appendChild(header);
+		container.appendChild(table1);
+		container.appendChild(table2);
+
+		info_window = get_info_window(radio1.ssid, container);
+
+
+		// Calculate info_window location
+		var lat1 = parseFloat(radio1.lat),
+			lng1 = parseFloat(radio1.lng),
+			lat2 = parseFloat(radio2.lat),
+			lng2 = parseFloat(radio2.lng);
+
+		mid_lat = (lat1 + lat2) / 2;
+		mid_lng = (lng1 + lng2) / 2;
+
+		center = new google.maps.LatLng(mid_lat, mid_lng);
+
+		info_window.setPosition(center);
+
+		return info_window;
 	}
 
 
 	//function creates new polygon based on arc_points
 	//links info_windows to polygon at info_window_location
-	function draw_sector_polygon(name, arc_points, info_window, info_window_location){
+	function draw_sector_polygon(name, arc_points, info_window, info_window_location, freq){
 		
 		//Draw sector polygon
 		var sector_polygon = new google.maps.Polygon({
@@ -192,8 +317,9 @@ var pSlice = (function(window, google, undefined){
                 paths: [arc_points],
                 strokeColor: "#010078",
                 strokeOpacity: 1,
-                strokeWeight: 2,                
-                fillColor: "#010078",//rf.get_color_by_freq(freq),
+                strokeWeight: 2,
+                fillColor: '#010078',            
+                // fillColor: rf.get_color_by_freq(freq),
                 fillOpacity: 0.8,
                 zIndex: global_z_index,
                 map: map
@@ -201,7 +327,7 @@ var pSlice = (function(window, google, undefined){
 
 		sectors.push(sector_polygon);
 		//adds click event to poly
-		add_click_event(sector_polygon, info_window, info_window_location);
+		add_click_event(sector_polygon, info_window);
 	}
 
 
@@ -344,12 +470,13 @@ var pSlice = (function(window, google, undefined){
 
 
 	// Adds click event for info_window positioned at info_window_location
-	function add_click_event(poly, info_window, info_window_location){
+	function add_click_event(poly, info_window){
 
 		google.maps.event.addListener(poly,'click', function(){
-			// Should this part not be done when initializing the info_window?
-	    	info_window.setPosition(info_window_location);
 
+			for(var i = 0; i < info_windows.length; i++){
+				info_windows[i].close();
+			}
 			info_window.open(map, poly);
 		});
 	}
@@ -377,10 +504,12 @@ var pSlice = (function(window, google, undefined){
 
 		add_radio: function(radio){ return add_radio(radio) },
 		add_site: function(site){ return add_site(site) },
+		add_backhaul: function(radio1, radio2){ return add_backhaul(radio1, radio2) },
 		toggle_sector: function(name){ return toggle_sector(name) },
 		remove_marker: function(name){ return remove_marker(name) },
 		remove_sector: function(name){ return remove_sector(name) },
-		sectors: function(){ return sectors }
+		sectors: function(){ return sectors },
+		info_windows: function(){ return info_windows }
 	}	
 
 })(window, google, undefined);

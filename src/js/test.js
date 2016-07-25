@@ -25,3 +25,39 @@ var test_site = {
 	'lng': 			-97.0583649
 };
 pSlice.add_site(test_site);
+
+var test_site_2 = {
+	'site_name': 	'Test Site 2',
+	'height': 		100,
+	'site_range': 	8,
+	'site_number': 	2,
+	'type': 		'Rhone 45',
+	'lat': 			36.204420,
+	'lng': 			-96.936350
+}
+pSlice.add_site(test_site_2);
+
+
+backhaul1 = {
+	'device_name': 		'Test Backhaul 1',
+	'site_name': 		'Test Site 1',
+	'ssid': 			'Backhaul Link',
+	'tx_freq': 			2400,
+	'tx_chan_width': 	20,
+	'lat': 				36.1132317,
+	'lng': 				-97.0583649
+}
+
+backhaul2 = {
+	'device_name': 		'Test Backhaul 2',
+	'site_name': 		'Test Site 2',
+	'ssid': 			'Backhaul Link',
+	'tx_freq': 			2400,
+	'tx_chan_width': 	20,
+	'lat': 				36.204420,
+	'lng': 				-96.936350
+}
+
+pSlice.add_backhaul(backhaul1, backhaul2);
+
+
