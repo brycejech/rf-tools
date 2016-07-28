@@ -1,6 +1,7 @@
 
 var pSlice = (function(window, google, undefined){
 	// Library for drawing pie-slices on google map canvas for use with frequency planning
+	// Uses google maps javascript API V3
 
 	//Global Variables
 	var towers = {},
