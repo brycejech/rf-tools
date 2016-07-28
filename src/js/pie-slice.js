@@ -17,7 +17,7 @@ var pSlice = (function(window, google, undefined){
 	// Set up map options 
 	var map_options = {
     		mapTypeId: google.maps.MapTypeId.ROADMAP,
-			scrollwheel: false,
+			// scrollwheel: false,
 			zoom: 10,
 			zoomControlOptions: {
 	 			style: google.maps.ZoomControlStyle.LARGE,
@@ -233,14 +233,15 @@ var pSlice = (function(window, google, undefined){
 	function get_backhaul_info_window(radio1, radio2){
 
 
-		var elems = ['device_name', 'ssid', 'tx_freq', 'tx_chan_width', 'site_name']
+		var elems = ['device_name', 'ssid', 'ip', 'tx_freq', 'tx_chan_width', 'site_name']
 
 		var display_format = {
 			'device_name': 		'Device Name:',
 			'ssid': 			'SSID:',
 			'tx_freq': 			'Frequency:',
 			'tx_chan_width': 	'Channel Width:',
-			'site_name': 		'Site:'
+			'site_name': 		'Site:',
+			'ip': 				'Address:'
 		}
 
 		var container = document.createElement('div'),
@@ -269,10 +270,30 @@ var pSlice = (function(window, google, undefined){
 			data2.setAttribute('style', 'text-align:right;');
 
 			col1.innerHTML = display_format[elems[i]];
-			data1.innerHTML = radio1[elems[i]];
-
 			col2.innerHTML = display_format[elems[i]];
-			data2.innerHTML = radio2[elems[i]];
+
+			if(elems[i] == 'ip'){
+
+				var link1 = document.createElement('a'),
+					link2 = document.createElement('a');
+
+				link1.setAttribute('href', 'http://' + radio1[elems[i]]);
+				link1.setAttribute('target', '_blank');
+				link1.innerHTML = radio1[elems[i]];
+				
+				link2.setAttribute('href', 'http://' + radio2[elems[i]]);
+				link2.setAttribute('target', '_blank');
+				link2.innerHTML = radio2[elems[i]]
+
+				data1.appendChild(link1);
+				data2.appendChild(link2);
+
+			}
+			else{
+
+				data1.innerHTML = radio1[elems[i]];
+				data2.innerHTML = radio2[elems[i]];
+			}
 
 			row1.appendChild(col1);
 			row1.appendChild(data1);
@@ -318,8 +339,8 @@ var pSlice = (function(window, google, undefined){
                 strokeColor: "#010078",
                 strokeOpacity: 1,
                 strokeWeight: 2,
-                fillColor: '#010078',            
-                // fillColor: rf.get_color_by_freq(freq),
+                // fillColor: '#010078',            
+                fillColor: rf.get_color_by_freq(freq),
                 fillOpacity: 0.8,
                 zIndex: global_z_index,
                 map: map
