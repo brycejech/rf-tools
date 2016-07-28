@@ -1,10 +1,6 @@
-// TODO //
-// - Add draw line functionality (will need it for backhauls)
-// 		- should have info window on click with info on both backhauls
-
 
 var pSlice = (function(window, google, undefined){
-	// Library for drawing pie-slices on google map canvas
+	// Library for drawing pie-slices on google map canvas for use with frequency planning
 
 	//Global Variables
 	var towers = {},
@@ -16,12 +12,12 @@ var pSlice = (function(window, google, undefined){
 
 	// Set up map options 
 	var map_options = {
-    		mapTypeId: google.maps.MapTypeId.ROADMAP,
+			mapTypeId: google.maps.MapTypeId.ROADMAP,
 			// scrollwheel: false,
 			zoom: 10,
 			zoomControlOptions: {
-	 			style: google.maps.ZoomControlStyle.LARGE,
-	 			position: google.maps.ControlPosition.TOP_LEFT
+				style: google.maps.ZoomControlStyle.LARGE,
+				position: google.maps.ControlPosition.TOP_LEFT
 			},
 			center: {
 				lat: 36.113225,
@@ -52,7 +48,7 @@ var pSlice = (function(window, google, undefined){
 
 		var info_window = get_site_info_window(site);
 		info_windows.push(info_window);
-		// Rename this
+
 		add_click_event(towers[site_name], info_window);
 	}
 
@@ -129,9 +125,9 @@ var pSlice = (function(window, google, undefined){
 			var info_window = get_radio_info_window(radio);
 			info_windows.push(info_window);
 
-	  		var info_window_location = get_destination_point(center, azimuth, range/2);
+			var info_window_location = get_destination_point(center, azimuth, range/2);
 
-	  		draw_sector_polygon(radio.device_name, arc_points, info_window, info_window_location, radio.tx_freq);
+			draw_sector_polygon(radio.device_name, arc_points, info_window, info_window_location, radio.tx_freq);
 		}
 		else{
 			console.log('Sector with name '+ radio.device_name +' already exists!')
@@ -328,37 +324,37 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function creates new polygon based on arc_points
-	//links info_windows to polygon at info_window_location
+	// Creates new polygon based on arc_points
+	// Links info_windows to polygon at info_window_location
 	function draw_sector_polygon(name, arc_points, info_window, info_window_location, freq){
 		
 		//Draw sector polygon
 		var sector_polygon = new google.maps.Polygon({
-				name: name,
-                paths: [arc_points],
-                strokeColor: "#010078",
-                strokeOpacity: 1,
-                strokeWeight: 2,
-                // fillColor: '#010078',            
-                fillColor: rf.get_color_by_freq(freq),
-                fillOpacity: 0.8,
-                zIndex: global_z_index,
-                map: map
-     });
+			name: name,
+			paths: [arc_points],
+			strokeColor: "#0000FF",
+			strokeOpacity: 1,
+			strokeWeight: 2,
+			fillColor: '#0000FF',
+			fillOpacity: 0.8,
+			zIndex: global_z_index,
+			map: map
+		});
 
 		sectors.push(sector_polygon);
-		//adds click event to poly
+		// Adds click event to poly
 		add_click_event(sector_polygon, info_window);
 	}
 
 
-	//function that returns a destination pt based on center coordinates, bearing, and radius
+	// Returns a destination point based on center coordinates, bearing, and radius
 	function get_destination_point(center, bearing, radius){
 
 		var R = EarthRadiusMeters; // earth's mean radius in meters
 		var bearing = to_radians(bearing);
 
-		var lat1 = to_radians(center.lat()), lon1 = to_radians(center.lng());
+		var lat1 = to_radians(center.lat()),
+			lon1 = to_radians(center.lng());
 
 		var lat2 = Math.asin( Math.sin(lat1)*Math.cos(radius/R) + Math.cos(lat1)*Math.sin(radius/R)*Math.cos(bearing) );
 
@@ -370,9 +366,9 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function that draws the arc based on center pt, intial and final bearings(direction), and radius
+	// Draws the arc based on center point, intial and final bearings(direction), and radius
 	function get_arc_points(center, bearing, beamwidth, radius){ 
-		//TODO - Clean up naming to be consistent with rest of doc, lowercase_with_underscores
+		// TODO - Clean up naming to be consistent with rest of doc, lowercase_with_underscores
 
 		// Why are we using this when we have to_degrees & to_radians?
 		var d2r = Math.PI / 180;   // degrees to radians 
@@ -403,14 +399,14 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function converts degrees to radians
+	// Degrees to radians
 	function to_radians(degrees) {
 
 		return degrees * Math.PI / 180;
 	}
 
 
-	//function converts coordinates to degrees.
+	// Radians to degrees.
 	function to_degrees(radians) {
 
 		return radians * 180 / Math.PI;
@@ -421,9 +417,9 @@ var pSlice = (function(window, google, undefined){
 	function set_center(lat, lng){
 
 		map.setCenter({
-	      'lat': lat,
-	      'lng': lng
-	    });
+			'lat': lat,
+			'lng': lng
+		});
 	}
 
 
@@ -467,7 +463,7 @@ var pSlice = (function(window, google, undefined){
 	}
 
 
-	//function to remove a specific sector
+	// Removes sector by name
 	function remove_sector(name){
 
 		for(var i = 0; i<sectors.length; i++){
@@ -485,8 +481,8 @@ var pSlice = (function(window, google, undefined){
 		// TODO - check and see if we can go ahead and set center point here
 		return new google.maps.InfoWindow({
 			name: name,
-	    	content: content
-	    	});
+			content: content
+		});
 	}
 
 
@@ -511,7 +507,7 @@ var pSlice = (function(window, google, undefined){
 					sectors[i].setMap(null)
 				}
 				else{
-					// Increment global_z_index so sector appears on top when toggled on
+					// Increment global_z_index so sector appears on top when toggled back on
 					global_z_index++;
 					sectors[i].setOptions({zIndex: global_z_index})
 					sectors[i].setMap(map)
@@ -532,5 +528,4 @@ var pSlice = (function(window, google, undefined){
 		sectors: function(){ return sectors },
 		info_windows: function(){ return info_windows }
 	}	
-
 })(window, google, undefined);
